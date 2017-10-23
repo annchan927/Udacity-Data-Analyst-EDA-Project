@@ -1,0 +1,396 @@
+RED WINE QUALITY EDA PROJECT by David Gonsalves
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using in your analysis in this code
+#install.packages("ggplot2", dependencies = T) 
+#install.packages("knitr", dependencies = T)
+#install.packages("dplyr", dependencies = T)
+#install.packages("gridExtra", dependencies = T)
+#install.packages("GGally", dependencies = T)
+
+library(ggplot2)
+library(gridExtra)
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+wineQR <- read.csv('wineQualityReds.csv')
+
+# Examination of dataset variables
+str(wineQR)
+summary(wineQR)
+
+# Based on the dataset description the Quality variable should be a factor
+wineQR$quality <- factor(wineQR$quality, ordered = T)
+# Focused xxamination of the Quality variable
+str(wineQR$quality)
+summary(wineQR$quality)
+```
+
+> EDA pertaining to Red Wine Quality.
+The winQR dataset consists of tested chemical & physical properties (inputs) and sensory (the output) variables related to red and white variants of the Portuguese "Vinho Verde" wine. A total of 1,599 wines were tested.
+Note: there is no data about grape types, wine brand, wine selling price, etc.
+The inputs include objective tests (e.g. PH values) and the output is based on sensory data (median of evaluations made by three wine experts). Each expert graded the wine quality between 0 (very bad) and 10 (very excellent).
+Description of variables:
+Input variables (based on tested chemical and physical properties):
+  1 - fixed acidity (tartaric acid - g / dm^3)
+  2 - volatile acidity (acetic acid - g / dm^3)
+  3 - citric acid (g / dm^3)
+  4 - residual sugar (g / dm^3)
+  5 - chlorides (sodium chloride - g / dm^3
+  6 - free sulfur dioxide (mg / dm^3)
+  7 - total sulfur dioxide (mg / dm^3)
+  8 - density (g / cm^3)
+  9 - pH
+  10 - sulphates (potassium sulphate - g / dm^3)
+  11 - alcohol (% by volume)
+Output variable (based on sensory data): 
+  12 - quality (score between 0 and 10)
+
+> Dataset source:
+P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. [2009]
+Modeling wine preferences by data mining from physicochemical properties.
+In Decision Support Systems, Elsevier, 47(4):547-553. ISSN: 0167-9236.
+
+> Univariate Plots Section
+
+```{r echo=FALSE, Univariate_Plots1}
+grid.arrange(qplot(wineQR$fixed.acidity, fill=I("red"), col=I("black")),
+             qplot(wineQR$volatile.acidity, fill=I("red"), col=I("black")),
+             qplot(wineQR$citric.acid,fill=I("red"), col=I("black")),
+             qplot(wineQR$residual.sugar, fill=I("red"), col=I("black")),
+             qplot(wineQR$chlorides, fill=I("red"), col=I("black")),
+             qplot(wineQR$free.sulfur.dioxide,fill=I("red"),                                  col=I("black")),
+             qplot(wineQR$total.sulfur.dioxide, fill=I("red"),                                col=I("black")),
+             qplot(wineQR$density, fill=I("red"), col=I("black")),
+             qplot(wineQR$pH, fill=I("red"), col=I("black")),
+             qplot(wineQR$sulphates, fill=I("red"), col=I("black")),
+             qplot(wineQR$alcohol, fill=I("red"), col=I("black")),
+             qplot(wineQR$quality, fill=I("red"), col=I("black")),
+             ncol = 4)
+
+# Preliminary histogram plots to explore the shapes of the data distributions
+
+```
+
+> The following data pattern for each chemical, physical, or sensory property were observed.
+Normally distributed properties: density; PH; quality
+Long tailed properties: fixed acidity; volatile acidity; free sulfur; total sulfur; alcohol
+Bimodal property: citric acid
+Properties with significant outliers: residual sugar; chlorides; sulphates
+
+```{r echo=FALSE, Univariate_Plots2}
+
+fa_log10 <- qplot(data = wineQR, x = log10(fixed.acidity))
+
+tsd_log10 <- qplot(data = wineQR, x = log10(total.sulfur.dioxide))
+
+ca_log10 <- qplot(data = wineQR, x = log10(citric.acid))
+
+alc_log10 <- qplot(data = wineQR, x = log10(alcohol))
+
+rs_log10 <- qplot(data = wineQR, x = log10(residual.sugar))
+
+chl_log10 <- qplot(data = wineQR, x = log10(chlorides))
+
+sulph_log10 <- qplot(data = wineQR, x = log10(sulphates))
+
+# Plots transforming long tailed and bimodal data to uncover normal distributions
+
+grid.arrange(fa_log10, ca_log10, tsd_log10, alc_log10, rs_log10, chl_log10,               sulph_log10,  ncol = 3)
+
+# Combined display of transformed data
+
+```
+
+> The summary(wineQR$quality) results indicate a potential convenience for
+introducing a new variable to combine the wine quality into groups,
+as follows: low (quality 3 or 4), medium (5 or 6), and high (7 or 8)
+
+```{r echo=FALSE, Univariate_Plots3}
+
+wineQR$Q.group <- NA
+wineQR$Q.group <- ifelse(wineQR$quality < 5, 'low (3-4)',
+                  ifelse(wineQR$quality < 7, 'medium (5-6)',
+                  'high (7-8)'))
+wineQR$Q.group <- factor(wineQR$Q.group, levels = c('low (3-4)',
+                          'medium (5-6)', 'high (7-8)'))
+
+# Created a new variable grouping wine quality into three categories
+
+summary(wineQR$Q.group)
+
+# Verifying wine quality groupings
+```
+
+> Univariate Analysis
+
+> Questions for Relection:
+### What is the structure of the dataset?
+After conversion from csv the structure of the wineQR dataset is a dataframe in wide format. An additional variable was added to group the quality data.
+
+> ### What is/are the main feature(s) of interest in the dataset?
+The main features of the dataset are:
+1. All the wines are red and were produced as wine type "vinho verde" which indicates the wines originate from a particular region in Portugal, are not aged,  & exhibit a slight effervescence.
+2. The data for each wine contains 10 chemical properties, one physical property (density), and one sensory property (quality).
+3. My main interest is to investigate Which chemical and physical properties influence the quality of this type of red wine?
+
+> ### What other features in the dataset will help support the investigation?
+The sensory score for each wine is the median of at least 3 evaluations made by wine experts, a traditional way of evaluating wines. This feature provides a subjective, consensus measure to lend some credence to any findings.
+
+> ### Did you create any new variables from existing variables in the dataset?
+To simplfiy the analysis I introduced a new variable grouping the quality data into Q.group with values low (3-4), medium (5-6), and high (7-8).
+
+> ### Of the features you investigated, were there any unusual distributions?
+The possibly unusual (unexpected) distribution was 
+Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
+The data was clean so no tidying was needed. When I reviewed the log transformations it seemed that citric acid, sulphates, and alcohol have the most potential to be wine quality differentiators
+
+
+> Bivariate Plots Section
+
+> The Univariate analysis indicate some wine properties of interest namely, citric acid, sulphates, an alcohol but did not illuminate any relationships between properties. My next step was to employ the ggpairs function to pair sets of variables in the wineQR dataset in order to uncover possible interrelationships between properties
+
+```{r echo=FALSE, Bivariate_Plots1}
+
+library(GGally)
+wineQR.subset <- wineQR[,2:13]
+
+# Subset the wineQR dataset to allow ggpairs plot to be more efficient
+
+ggpairs(wineQR.subset, axisLabels = c('internal'),
+  lower = list(continuous = wrap("points", shape = I('.'))),
+  upper = list(combo = wrap("box", outlier.shape = I('.'))))
+
+#Pair up wineQR dataset properties to look for relationships
+
+```
+
+> The ggpairs plot indicates that correlations between many of the wine properties are weak.
+Fixed acidity and volatile acidity seem to be somewhat inversely correlated. Clearly pH is expected to be inversely related with acidity since pH is a measure of acidity [1(strong) - 6(weak)], distilled water [7(neutral)], basicity [8(weak) - 14(strong)].
+Although there is separate data for fixed, volatile, and citric acids the correlation data, and common sense, indicate that these measures probably overlap.
+There also seems to be a positive correlation between density and acidity. Since density is a physical property and acidity a chemical property intuitively more wine molecules would carry more acid components.
+
+> In summary, ggpairs boxplots seem to be more useful in terms of addressiong the central question regaring how the various properties influene the perceived quality of the wines. Therefore I focused on studying the boxplots more closely.
+
+
+```{r echo=FALSE, Bivariate_Plots2}
+
+grid.arrange(qplot(data = wineQR, x = Q.group, y = fixed.acidity,
+                    geom = 'boxplot'), 
+             qplot(data = wineQR, x = Q.group, y = volatile.acidity,
+                    geom = 'boxplot'),
+             qplot(data = wineQR, x = Q.group, y = citric.acid,
+                    geom = 'boxplot'),
+             qplot(data = wineQR, x = Q.group, y = residual.sugar,
+                    geom = 'boxplot'),
+             qplot(data = wineQR, x = Q.group, y = chlorides,
+                    geom = 'boxplot'),
+             qplot(data = wineQR, x = Q.group, y = free.sulfur.dioxide,                        geom = 'boxplot'),
+             qplot(data = wineQR, x = Q.group, y = total.sulfur.dioxide,                       geom = 'boxplot'),
+             qplot(data = wineQR, x = Q.group, y = density,                                    geom = 'boxplot'),
+             qplot(data = wineQR, x = Q.group, y = pH,                                         geom = 'boxplot'),
+             qplot(data = wineQR, x = Q.group, y = sulphates,                                         geom = 'boxplot'),
+             qplot(data = wineQR, x = Q.group, y = alcohol,
+                          geom = 'boxplot'),
+            ncol = 2)
+
+# Comparison of boxplots for each wine property separated by quality group
+
+```
+
+> I confirmed with these plots that measures of fixed acidity and volatile acidity seem to counterbalance each other. On the other hand, citric acid seems to play a more signifiant role in distinguising the higher quality wines. To further condense my findings, I've decided to combine the fixed and volatile acidities together in a new variable labeled FaV.acidity.
+
+```{r echo=FALSE, Bivariate_Plots3}
+
+wineQR$FaV.acidity <- wineQR$fixed.acidity + wineQR$volatile.acidity
+
+# Combined Fixed and Volatile acidity into a new single variable FaV.acidity
+
+grid.arrange(qplot(data = wineQR, x = Q.group, y = FaV.acidity,
+                    geom = 'boxplot'), 
+             qplot(data = wineQR, x = Q.group, y = citric.acid,
+                    geom = 'boxplot'),
+                    ncol = 2)
+
+# Plot of combined acidity alongside citric acid to better guage which of these property is likely to be more inluential in distiguishing the higher quality wines in our dataset.
+
+```
+
+> The boxplots strengthen my expectation that citric acid, alcohol, and sulphates are likely good indicators for wine quality in this dataset. Consequently, I obtained quantitative summaries for these properties by quality group
+
+
+```{r echo=FALSE, Bivariate_Plots4}
+
+with(wineQR, by(citric.acid, Q.group, mean))
+with(wineQR, by(alcohol, Q.group, mean))
+with(wineQR, by(sulphates, Q.group, mean))
+
+# Obtain the means for each propery of interested by quality group
+
+```
+
+> Bivariate Analysis
+
+> The boxplots strengthen my expectation that citric acid, alcohol, and sulphates are likely good indicators for wine quality in this dataset. Consequently, I obtained quantitative summaries for these properties by quality group
+
+> What are relationships I observed in this part of the investigation?
+From the correlation coefficients in the ggpairs plot and from the subsequent boxplots it has become clear that there is a significant positive relationship between citric acid concentration and quality; between between alcohol content and quality; and between sulphates concentration and quality These relationships have very few outliers within the high quality group.
+
+> What was the strongest relationships you found?
+> Comparing the quantitative summary statistics by quality group I see that for citric acid the proportional difference in means between medium and high qualities is (0.3765 - 0.2583)/0.2585 = 45.8%
+For alcohol acid the proportional difference in means between medium and high qualities is (11.52 - 10.25)/10.25 = 12.4%
+For sulphates the proportional difference in means between medium and high qualities is (0.7435 - 0.6473)/0.6473 = 14.9%
+
+> I conclude that citric acid is the most distinguishing factor in determining the "vinho verde" wine quality, followed by the percentage of sulphates, and then the concentration of alcohol
+> Revisiting the ggpairs plot I note that the correlation coefficient between citric acid and sulphates is 0.313. So there does appears to be a weak relationship between these two properties.
+
+> Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+Wine properities other than citric acid, sulphates, and alcohol do not appear to be promising predictors of wine quality.
+
+# Multivariate Plots Section
+
+> Given the findings above, I want to explore relationships between the properties that are the most promising for predicting wine quality.
+
+```{r echo=FALSE, Multivariate_Plots1}
+
+ggplot(data = wineQR, aes(x = citric.acid, y = sulphates)) +
+  geom_line(aes(color = Q.group), stat = 'summary', fun.y = median) +
+  geom_smooth(method = "lm", se = TRUE, size = 1) +
+  guides(colour = guide_legend(reverse=T))
+
+# Line plot showing how sulphate concentrations vary with increased citric acid concentrations by wine quality group
+```
+
+
+```{r echo=FALSE, Multivariate_Plots2}
+
+ggplot(data = wineQR, aes(x = citric.acid, y = alcohol)) +
+  geom_line(aes(color = Q.group), stat = 'summary', fun.y = median) +
+  geom_smooth(method = "lm", se = TRUE, size = 1) +
+  guides(colour = guide_legend(reverse=T))
+
+## Line plot showing how alcocol content varies with increased citric acid concentrations by wine quality group
+
+```
+
+> Multivariate Analysis
+
+> Were there any interesting or surprising interactions between features?
+For all three groups of wine quality, the variations around the mean for alcohol content were quite pronounced. By contrast, the variations around the mean for sulphates were small. It appears that citric acid together with sulphate concentrations may be the reliable predictors of wine quality for this dataset. The standard error shading reiforces this opinion.
+
+------
+
+# Final Plots and Summary
+
+> **Tip**: You've done a lot of exploration and have built up an understanding of the structure of and relationships between the variables in your dataset. Here, you will select three plots from all of your previous exploration to present here as a summary of some of your most interesting findings. Make sure that you have refined your selected plots for good titling, axis labels (with units), and good aesthetic choices (e.g. color, transparency). After each plot, make sure you justify why you chose each plot by describing what it shows.
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+
+wQR_b1 <- ggplot(data = wineQR, aes(x = quality, fill=I("red"),                             col=I("black"))) +
+          geom_bar(stat = "count") +
+          xlab("Quality Rating") + ylab("Count") +
+          ggtitle("Vinho Verde Red Wines by Quality")
+  
+wQR_b2 <- ggplot(data = wineQR, aes(x = Q.group, fill=I("red"),                             col=I("black"))) +
+          geom_bar(stat = "count") +
+          xlab("Quality Group") + ylab("Count") +
+          ggtitle("Vinho Verde Red Wines by Quality Group")
+
+grid.arrange(wQR_b1, wQR_b2,ncol = 2)
+
+# Side-by-side bar plots of quality ratings - discrete and grouped
+
+```
+
+### Description One
+> My main interest for this EDA project is to investigate Which chemical and physical properties influence the quality of "vinho verde" red wines. The key starting point is to understand how the wine quality was measured. Evaluations were made by three wine experts. Each expert graded the wine quality between 0 (very bad) and 10 (very excellent). These bar charts show the counts for each quality grade in the dataset containing a total of 1,599 red wines. The second bar chart summarizes the quality into three groups namely, low (3-4), medium (5-6), and high (7-8). This grouping helps to simplify the analysis and the vizualizations.
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+
+grid.arrange(qplot(data = wineQR, x = Q.group, y = citric.acid,                                 geom=c("boxplot"), fill=Q.group,
+                    main="Citric Acid by Group",
+                    xlab="", ylab="Citric Acid (g/cubic dm)") +
+                    theme(legend.position="none"),
+            qplot(data = wineQR, x = Q.group, y = sulphates,                                    geom=c("boxplot"), fill=Q.group,
+                    main="Sulphates by Group",
+                    xlab="", ylab="Sulphates (g/cubic dm)") +
+                    theme(legend.position="none"),
+            qplot(data = wineQR, x = Q.group, y = alcohol,                                      geom=c("boxplot"), fill=Q.group,
+                    main="Alcohol by Group",
+                    xlab="", ylab="Alcohol (% by volume)") +
+                    theme(legend.position="none"),
+            ncol = 3)
+
+#Side-by-side boxplots illustrating the relative impact of each of these wine properties on the three groups of wine quality
+
+```
+
+### Description Two
+> These plots clearly illustrate the significance of citrus, sulphates and alcohol as differentiators between the low, medium and high quality wines. When analyzing the boxplots it is important to note the differences between the y-scales. The quantitative analysis described earlier shows that the differences between the means of medium and high quality wines are 46% for citric acid; 15% for sulphates and 12% for alcohol.
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+
+wQR_m1 <- ggplot(data = wineQR, aes(y = citric.acid, x = sulphates, color =               Q.group)) +
+              geom_point(alpha = 0.8, size = 1) +
+              geom_smooth(method = "lm", se = TRUE, size = 1) +                           scale_y_continuous(limits = c(0,0.8)) +                                     scale_x_continuous(limits = c(0.1,2)) +
+              ylab("Citric Acid (g/cubic dm)") +
+              xlab("Sulphates (g/cubic dm)") +
+              scale_color_brewer(type = 'seq', palette = 11,                                                  guide = guide_legend(title =
+              'Quality Groups', reverse = TRUE)) +
+              ggtitle("Citric Acid vs Sulphates over Wine Quality Groups")
+
+wQR_m2 <- ggplot(data = wineQR, aes(y = citric.acid, x = alcohol,
+              color = Q.group)) +
+              geom_point(alpha = 0.8, size = 1) +
+              geom_smooth(method = "lm", se = TRUE, size = 1) +
+              scale_y_continuous(limits = c(0,0.8)) +
+              ylab("Citric Acid (g/cubic dm)") +
+              xlab("Alcohol (% by volume)") +
+              scale_color_brewer(type = 'seq', palette = 11,                                                  guide = guide_legend(title =
+                                  'Quality Groups', reverse = TRUE)) +
+              ggtitle("Citric Acid vs Alcohol over Wine Quality Groups")
+
+grid.arrange(wQR_m1, wQR_m2,ncol = 2)
+
+# Side-by-side multivariate plots showing the relationships between citric acid concentrations and sulphate concentrations and between citric acid concentrations and alcohol concentrations juxtaposed with a dot plot o wine quality groups
+```
+
+wQR_m1 <- ggplot(data = wineQR, aes(y = citric.acid, x = sulphates, color =               Q.group)) +
+              geom_point(alpha = 0.8, size = 1) +
+              geom_smooth(method = "lm", se = TRUE, size = 1) +                           scale_y_continuous(limits = c(0,0.8)) +                                     scale_x_continuous(limits = c(0.1,2)) +
+              ylab("Citric Acid (g/cubic dm)") +
+              xlab("Sulphates (g/cubic dm)") +
+              scale_color_brewer(type = 'seq', palette = 11,                                                  guide = guide_legend(title =
+              'Quality Groups', reverse = TRUE)) +
+              ggtitle("Citric Acid vs Sulphates over Wine Quality Groups")
+
+wQR_m2 <- ggplot(data = wineQR, aes(y = citric.acid, x = alcohol,
+              color = Q.group)) +
+              geom_point(alpha = 0.8, size = 1) +
+              geom_smooth(method = "lm", se = TRUE, size = 1) +
+              scale_y_continuous(limits = c(0,0.8)) +
+              ylab("Citric Acid (g/cubic dm)") +
+              xlab("Alcohol (% by volume)") +
+              scale_color_brewer(type = 'seq', palette = 11,                                                  guide = guide_legend(title =
+                                  'Quality Groups', reverse = TRUE)) +
+              ggtitle("Citric Acid vs Alcohol over Wine Quality Groups")
+
+grid.arrange(wQR_m1, wQR_m2,ncol = 2)
+
+### Description Three
+> Clearly, plot three shows that the high quality wines in this dataset tend to be found in the upper two quadrants of each plot. Also, the shapes of the confidence level shadows indicate that the linear model is not likely to be a reliable predictor of the relationships between these properties. In other words, these three properties seem to be quite independent of each other.  
+
+------
+
+# Reflection
+
+> I've long been facinated by wine making - in particular what makes a wine good? This dataset of 1,599 "vinho verde" red wines, containing 10 objective measures of important wine properties as well as expert wine quality rankings, gave me the opportunity to explore this question - using EDA techniques.
+I think one good data analyst decision that helped me perform the analysis  more easily and that enables the reader to better understand the results is to group the quality ratings into low (3-4), medium (5-6), and high (7-8).
+I've now a greater appreciation for the chemistry of wines and I've determined that three properties citric acid, sulphates, and alcohol are important components in the best "vinho verde"" wines.
+However, coming up with some formula that could be used to predict, or to produce, a high quality "vinho verde" red wine has proven to be illusive, so far. This begs the question, would a much bigger and wider dataset could allow a researcher to draw narrower conclusions?
+My analysis, coupled with more general information about wine making, leads me to conclude that the quality of wine, a product honed over thousands of years and evaluated by diverse palates, most likely cannot be reduced to any single scientific equation. 
